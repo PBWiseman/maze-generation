@@ -6,14 +6,17 @@ using UnityEngine;
 public class GameController : MonoBehaviour
 {
     private MazeConstructor constructor;
+    [SerializeField] private int rows;
+    [SerializeField] private int cols;
 
     void Awake()
     {
         constructor = GetComponent<MazeConstructor>();
+
     }
     
     void Start()
     {
-    
+    constructor.GenerateNewMaze(rows, cols);
     }
 }

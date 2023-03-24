@@ -3,6 +3,8 @@
 public class MazeConstructor : MonoBehaviour
 {
     public bool showDebug;
+    public float placementThreshold = 0.1f;   // chance of empty space
+    private MazeMeshGenerator meshGenerator;
     
     [SerializeField] private Material mazeMat1;
     [SerializeField] private Material mazeMat2;
@@ -16,6 +18,7 @@ public class MazeConstructor : MonoBehaviour
 
     void Awake()
     {
+        meshGenerator = new MazeMeshGenerator();
         // default to walls surrounding a single empty cell
         data = new int[,]
         {
@@ -24,7 +27,54 @@ public class MazeConstructor : MonoBehaviour
             {1, 1, 1}
         };
     }
-    void OnGUI()
+
+    private void DisplayMaze()
+    {
+        GameObject go = new GameObject();
+        go.transform.position = Vector3.zero;
+        go.name = "Procedural Maze";
+        go.tag = "Generated";
+
+        MeshFilter mf = go.AddComponent<MeshFilter>();
+        mf.mesh = meshGenerator.FromData(data);
+        
+        MeshCollider mc = go.AddComponent<MeshCollider>();
+        mc.sharedMesh = mf.mesh;
+
+        MeshRenderer mr = go.AddComponent<MeshRenderer>();
+        mr.materials = new Material[2] {mazeMat1, mazeMat2};
+    }
+
+    public void GenerateNewMaze(int sizeRows, int sizeCols)
+    {
+        if (sizeRows % 2 == 0 && sizeCols % 2 == 0)
+            Debug.LogError("Odd numbers work better for dungeon size.");
+
+        data = FromDimensions(sizeRows, sizeCols);
+        DisplayMaze();
+    }
+
+    public int[,] FromDimensions(int sizeRows, int sizeCols)
+    {
+        int[,] maze = new int[sizeRows, sizeCols];
+        int rMax = maze.GetUpperBound(0);
+        int cMax = maze.GetUpperBound(1);
+
+        for (int i = 0; i <= rMax; i++)        
+            for (int j = 0; j <= cMax; j++)            
+                if (i == 0 || j == 0 || i == rMax || j == cMax)                
+                    maze[i, j] = 1;                                    
+                else if (i % 2 == 0 && j % 2 == 0 && Random.value > placementThreshold)                                    
+                {
+                    maze[i, j] = 1;
+                    int a = Random.value < .5 ? 0 : (Random.value < .5 ? -1 : 1);
+                    int b = a != 0 ? 0 : (Random.value < .5 ? -1 : 1);
+                    maze[i+a, j+b] = 1;
+                }  
+        return maze;
+    }
+
+void OnGUI()
     {
         if (!showDebug)
             return;
