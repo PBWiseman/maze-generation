@@ -5,20 +5,25 @@ public class MazeConstructor : MonoBehaviour
     public bool showDebug;
     public float placementThreshold = 0.1f;   // chance of empty space
     private MazeMeshGenerator meshGenerator;
+
+    public float hallWidth{ get; private set; }
+    public int goalRow{ get; private set; }
+    public int goalCol{ get; private set; }
+
     
     [SerializeField] private Material mazeMat1;
     [SerializeField] private Material mazeMat2;
     [SerializeField] private Material startMat;
     [SerializeField] private Material treasureMat;
 
-    public int[,] data
-    {
-        get; private set;
-    }
+    public Node[,] graph;
+
+    public int[,] data { get; private set; }
 
     void Awake()
     {
         meshGenerator = new MazeMeshGenerator();
+        hallWidth = meshGenerator.width;
         // default to walls surrounding a single empty cell
         data = new int[,]
         {
@@ -45,14 +50,27 @@ public class MazeConstructor : MonoBehaviour
         mr.materials = new Material[2] {mazeMat1, mazeMat2};
     }
 
-    public void GenerateNewMaze(int sizeRows, int sizeCols)
-    {
+    public void GenerateNewMaze(int sizeRows, int sizeCols,TriggerEventHandler treasureCallback)
+    {        
+        DisposeOldMaze();  
+        
         if (sizeRows % 2 == 0 && sizeCols % 2 == 0)
             Debug.LogError("Odd numbers work better for dungeon size.");
-
+            
         data = FromDimensions(sizeRows, sizeCols);
-        DisplayMaze();
-    }
+
+        goalRow = data.GetUpperBound(0) - 1;
+        goalCol = data.GetUpperBound(1) - 1;                                    
+
+        graph = new Node[sizeRows,sizeCols];
+
+        for (int i = 0; i < sizeRows; i++)        
+            for (int j = 0; j < sizeCols; j++)            
+                graph[i, j] = data[i,j] == 0 ? new Node(i, j, true) : new Node(i, j, false);
+
+        DisplayMaze();  
+        PlaceGoal(treasureCallback);           
+    }  
 
     public int[,] FromDimensions(int sizeRows, int sizeCols)
     {
@@ -74,7 +92,7 @@ public class MazeConstructor : MonoBehaviour
         return maze;
     }
 
-void OnGUI()
+    void OnGUI()
     {
         if (!showDebug)
             return;
@@ -93,5 +111,26 @@ void OnGUI()
         }
 
         GUI.Label(new Rect(20, 20, 500, 500), msg);
+    }
+    public void DisposeOldMaze()
+    {
+        GameObject[] objects = GameObject.FindGameObjectsWithTag("Generated");
+        foreach (GameObject go in objects) {
+            Destroy(go);
+        }
+    }
+
+    private void PlaceGoal(TriggerEventHandler treasureCallback)
+    {            
+        GameObject treasure = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        treasure.transform.position = new Vector3(goalCol * hallWidth, .5f, goalRow * hallWidth);
+        treasure.name = "Treasure";
+        treasure.tag = "Generated";
+
+        treasure.GetComponent<BoxCollider>().isTrigger = true;
+        treasure.GetComponent<MeshRenderer>().sharedMaterial = treasureMat;
+
+        TriggerEventRouter tc = treasure.AddComponent<TriggerEventRouter>();
+        tc.callback = treasureCallback;
     }
 }
