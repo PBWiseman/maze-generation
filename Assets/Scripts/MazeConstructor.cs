@@ -133,4 +133,24 @@ public class MazeConstructor : MonoBehaviour
         TriggerEventRouter tc = treasure.AddComponent<TriggerEventRouter>();
         tc.callback = treasureCallback;
     }
+
+    public void DisposeOfSpheres()
+    {
+        GameObject[] objects = GameObject.FindGameObjectsWithTag("Generated");
+        foreach (GameObject go in objects) {
+            if (go.name == "Sphere"){
+                Destroy(go);
+            }
+        }
+    }
+
+    public void PlaceSphere(Node currentNode)
+    {            
+        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sphere.transform.position = new Vector3(currentNode.y * hallWidth, .5f, currentNode.x * hallWidth);
+        sphere.name = "Sphere";
+        sphere.tag = "Generated";
+        sphere.GetComponent<SphereCollider>().isTrigger = true;
+        sphere.GetComponent<MeshRenderer>().sharedMaterial = startMat;
+    }
 }

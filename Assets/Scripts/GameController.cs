@@ -1,5 +1,7 @@
 ﻿using System;
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(MazeConstructor))]           
 
@@ -30,6 +32,21 @@ public class GameController : MonoBehaviour
         aIController.StartAI();
     }
 
+    void Update()
+    {
+        if(Input.GetKeyDown("f"))
+        {
+            int playerCol = (int)Mathf.Round(aIController.Player.transform.position.x / aIController.HallWidth);
+            int playerRow = (int)Mathf.Round(aIController.Player.transform.position.z / aIController.HallWidth);
+            List<Node> path = aIController.FindPath(playerRow, playerCol, constructor.goalRow, constructor.goalCol);
+            constructor.DisposeOfSpheres();
+            foreach(Node node in path)
+            {
+                constructor.PlaceSphere(node);
+            }
+        }
+    }
+
     private GameObject CreatePlayer()
     {
         Vector3 playerStartPosition = new Vector3(constructor.hallWidth, 1, constructor.hallWidth);  
@@ -42,7 +59,9 @@ public class GameController : MonoBehaviour
     {
         Vector3 monsterPosition = new Vector3(constructor.goalCol * constructor.hallWidth, 0f, constructor.goalRow * constructor.hallWidth);
         GameObject monster = Instantiate(monsterPrefab, monsterPosition, Quaternion.identity);
-        monster.tag = "Generated";    
+        monster.tag = "Generated";
+        TriggerEventRouter mc = monster.AddComponent<TriggerEventRouter>();
+        mc.callback = OnMonsterTrigger;   
         return monster;
     }
 
@@ -50,5 +69,11 @@ public class GameController : MonoBehaviour
     { 
         Debug.Log("You Won!");
         aIController.StopAI();
+    }
+
+    private void OnMonsterTrigger(GameObject trigger, GameObject other)
+    {
+        Debug.Log("Gotcha!");
+        Start();
     }
 }
